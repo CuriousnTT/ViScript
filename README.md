@@ -256,7 +256,7 @@ const myNamedTuple: MyNamedTuple = ("Elizabeth", 20, false);
 //To access tuple, use index. You can use name if the tuple is named:
 console.log(myTuple[0]);
 console.log(myNamedTuple[1]);
-console.log(myNamedTuple[name]);
+console.log(myNamedTuple.name);
 ```
 
 #### Sets
@@ -267,9 +267,9 @@ Sets can not contain duplicate values, but can contain different datatypes.
 Since they are unordered, you specify types in the same way as you would with a normal TypeScript Array, and the Set only accepts members of the specified type(s).
 
 ```TypeScript
-type StringSet string{};
-type MultiTypedSet (string | boolean | number){};
+type StringSet: string{};
+type MultiTypedSet: (string | boolean | number){};
 ```
 
 Sets are useful for checking membership quickly and so on. They have relatively few parameters that are useful in a reactive context.
-If you have a reactive tuple, and a reactive variable depends on it (for example: rel rBorgInSet = rNameSet.has("Borg);), adding an element to the set tells the variable that it has to run the operation again, changing the value of the variable accordingly.
+If you have a reactive set, and a reactive variable depends on it (for example: rel rBorgInSet = rNameSet.has("Borg);), adding an element to the set tells the variable that it has to run the operation again, changing the value of the variable accordingly.
