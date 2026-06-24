@@ -1,11 +1,12 @@
 mod lexer;
-mod parser;
+//mod parser;
+mod utility;
 
 use std::env;
 use std::fs;
 use lexer::tokenizer::tokenize;
-use parser::ast::ASTNode;
-use parser::parser::parse;
+//use parser::ast::ASTNode;
+//use parser::parser::parse;
 
 fn main() {
     //Get test file from arguments
@@ -35,7 +36,7 @@ fn main() {
             return;
         }
     };
-    //println!("Input Tokenized:\n{:?}", tokens);
+    println!("Input Tokenized:\n{:?}", tokens);
     
     //let input_bytes = &input.as_bytes();
     //let ast: ASTNode = parse(&tokens);
