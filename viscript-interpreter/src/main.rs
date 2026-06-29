@@ -5,6 +5,7 @@ mod utility;
 use std::env;
 use std::fs;
 use lexer::tokenizer::tokenize;
+use utility::span::SourceFile;
 //use parser::ast::ASTNode;
 //use parser::parser::parse;
 
@@ -26,17 +27,26 @@ fn main() {
             return;
         }
     };
+    let file = SourceFile::new(input.clone());
     let input = input.replace("\r\n", "\n");
     println!("Input:\n\n{}\n", input);
     
-    let tokens = match tokenize(&input) {
-        Ok(tokens) => tokens,
-        Err(err) => {
-            eprintln!("Error tokenizing input: {}", err);
-            return;
+    let lexer_result = tokenize(&input);
+    if !lexer_result.errors.is_empty() {
+        eprintln!("Lexer errors:");
+        
+        for err in &lexer_result.errors {
+            eprint!("{}", err.report(&file));
         }
-    };
-    println!("Input Tokenized:\n{:?}", tokens);
+
+        return;
+    }
+    if !lexer_result.tokens.is_empty() {
+        eprintln!("Tokens:")
+    }
+    for token in &lexer_result.tokens {
+        println!("  {}", token)
+    }
     
     //let input_bytes = &input.as_bytes();
     //let ast: ASTNode = parse(&tokens);

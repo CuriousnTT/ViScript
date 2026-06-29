@@ -1,4 +1,9 @@
+pub mod directive;
+pub mod error;
 pub mod keyword;
 pub mod literal;
+pub mod operator;
+pub mod punctuation;
+pub mod regex;
 pub mod tokenizer;
 pub mod token;
