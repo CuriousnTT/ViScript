@@ -24,8 +24,6 @@ pub enum Token {
 /// 1-dimensional look at recognized token types.
 #[derive(Debug, Clone)]
 pub enum TokenKind {
-    InvalidNumeric,
-    InvalidBigInt,
     Keyword,
     Skip,
     Null,

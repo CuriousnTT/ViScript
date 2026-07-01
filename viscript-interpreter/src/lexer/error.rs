@@ -7,19 +7,23 @@ pub enum LexerError {
     UnexpectedCharacter {char: char, span: Span },
     UnknownDirective { name: String, span: Span },
     InvalidNumber { value: String, span: Span },
+    InvalidBigInt { value: String, span: Span },
 }
 
 impl fmt::Display for LexerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::UnexpectedCharacter {char, span } => {
-                write!(f, "Unexpected character: '{}' at {:?}", char, span)
+                write!(f, "Unexpected character: '{}'", char)
             }
             Self::UnknownDirective { name, span } => {
-                write!(f, "Unknown directive '{}' at {:?}", name, span)
+                write!(f, "Unknown directive '{}'", name)
             }
             Self::InvalidNumber { value, span } => {
-                write!(f, "Invalid number '{}' at {:?}", value, span)
+                write!(f, "Invalid number '{}'", value)
+            }
+            Self::InvalidBigInt { value, span } => {
+                write!(f, "Invalid BigInt '{}'", value)
             }
         }
     }
@@ -33,6 +37,7 @@ impl LexerError {
             Self::UnexpectedCharacter { span, .. } => *span,
             Self::UnknownDirective { span, .. } => *span,
             Self::InvalidNumber { span, .. } => *span,
+            Self::InvalidBigInt { span, .. } => *span,
         }
     }
 

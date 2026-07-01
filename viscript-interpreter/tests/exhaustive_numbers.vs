@@ -72,7 +72,7 @@
 07
 0123
 0777
-// nmeric separators
+// numeric separators
 1_000
 1_000_000
 123_456_789

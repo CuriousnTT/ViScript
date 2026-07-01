@@ -20,11 +20,6 @@ impl Span {
     }
 }
 
-pub fn span_from_match(pos: usize, mat: &regex::Match) -> Span {
-    Span { start: pos, end: pos + mat.end() }
-}
-
-
 #[derive(Debug, Clone)]
 pub struct Spanned<T> {
     pub value: T,
@@ -102,7 +97,7 @@ impl SourceFile {
             if line_num >= err_start_line && line_num <= err_end_line {
                 let mut underline = String::new();
 
-                let left = if line_num == err_start_line { err_start_col } else { 0 };
+                let left: usize = if line_num == err_start_line { err_start_col } else { 0 };
                 let right = if line_num == err_end_line { err_end_col } else { line_text.len() };
 
                 if left < right {

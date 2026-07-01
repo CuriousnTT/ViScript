@@ -1,4 +1,9 @@
-use super::super::lexer::token::Token;
+use crate::lexer::{
+    keyword::Keyword,
+    literal:: Literal,
+    token::Token,
+};
+
 use super::ast::ASTNode;
 use std::iter::Peekable;
 use std::slice::Iter;
@@ -18,12 +23,12 @@ fn parse_program(tokens: &mut Peekable<Iter<Token>>) -> ASTNode {
 
 fn parse_statement(tokens: &mut Peekable<Iter<Token>>) -> ASTNode {
     match tokens.peek() {
-        Some(Token::Keyword(kw)) if kw == "let" || kw == "const" || kw == "rel" => {
+        Some(Token::Keyword(kw)) if *kw == Keyword::Let || *kw == Keyword::Const || *kw == Keyword::Rel => {
             parse_variable_declaration(tokens)
         }
-        Some(Token::Keyword(kw)) if kw == "function" => parse_function_declaration(tokens),
+        Some(Token::Keyword(kw)) if *kw == Keyword::Function => parse_function_declaration(tokens),
         Some(Token::Identifier(_)) => parse_expression_statement(tokens),
-        Some(Token::Keyword(kw)) if kw == "if" => parse_if_statement(tokens),
+        Some(Token::Keyword(kw)) if *kw == Keyword::If => parse_if_statement(tokens),
         _ => panic!("Unexpected token: {:?}", tokens.peek()),
     }
 }
@@ -48,8 +53,12 @@ fn parse_variable_declaration(tokens: &mut Peekable<Iter<Token>>) -> ASTNode {
 
     let directive = match tokens.peek() {
         Some(Token::Directive(_)) => {
-            let dir = tokens.next().unwrap().clone();
-            Some(dir)
+            let dir_token = tokens.next().unwrap().clone();
+            if let Token::Directive(name) = dir_token {
+                Some(name)
+            } else {
+                None
+            }
         },
         _ => None,
     };
@@ -105,9 +114,19 @@ fn parse_expression(tokens: &mut Peekable<Iter<Token>>) -> ASTNode {
 fn parse_primary(tokens: &mut Peekable<Iter<Token>>) -> ASTNode {
     match tokens.next() {
         Some(Token::Identifier(id)) => ASTNode::Identifier(id.clone()),
-        Some(Token::Number(num)) => ASTNode::NumberLiteral(num.clone()),
-        Some(Token::StringLiteral(s)) => ASTNode::StringLiteral(s.clone()),
+
+        Some(Token::Literal(lit)) => match lit {
+            Literal::Numeric(n) => ASTNode::NumberLiteral(n.clone()),
+            Literal::String(s) => ASTNode::StringLiteral(s.clone()),
+            Literal::Boolean(b) => ASTNode::BooleanLiteral(*b),
+            Literal::Null => ASTNode::UndefinedLiteral,
+            Literal::Undefined => ASTNode::UndefinedLiteral,
+            Literal::BigInt(s) => ASTNode::BigIntLiteral(s.clone()),
+            Literal::RegExp(s) => ASTNode::RegExpLiteral(s.clone()),
+        },
+
         Some(Token::Directive(d)) => ASTNode::Directive(d.clone()),
+
         Some(token) => panic!("Unexpected token: {:?}", token),
         None => panic!("Unexpected end of tokens"),
     }

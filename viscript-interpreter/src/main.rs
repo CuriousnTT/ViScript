@@ -39,7 +39,7 @@ fn main() {
             eprint!("{}", err.report(&file));
         }
 
-        return;
+        //return;
     }
     if !lexer_result.tokens.is_empty() {
         eprintln!("Tokens:")
