@@ -2,6 +2,7 @@ pub mod directive;
 pub mod error;
 pub mod keyword;
 pub mod literal;
+mod number_lexer;
 pub mod operator;
 pub mod punctuation;
 pub mod regex;

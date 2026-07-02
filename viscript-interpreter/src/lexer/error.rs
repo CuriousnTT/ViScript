@@ -1,6 +1,9 @@
 use std::fmt;
 
-use crate::utility::span::{SourceFile, Span};
+use crate::source::{
+    span::Span,
+    sourcefile::SourceFile,
+};
 
 #[derive(Debug)]
 pub enum LexerError {
@@ -43,9 +46,14 @@ impl LexerError {
 
     pub fn report(&self, file: &SourceFile) -> String {
         let span = self.span();
-        let (line, col) = span.line_column(file);
+        let (line, col) = file.line_column(span.start); // 0-based -> must be made 1-based for users
 
-        let mut msg = format!("error: {} at {}:{}\n", self, line, col);
+        let mut msg = format!(
+            "error: {} at {}:{}\n",
+            self,
+            line + 1,
+            col + 1
+        );
         msg.push_str(&file.get_error_context(span, 1));
         msg
     }

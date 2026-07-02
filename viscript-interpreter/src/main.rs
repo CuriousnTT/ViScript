@@ -1,11 +1,12 @@
+mod common;
 mod lexer;
 //mod parser;
-mod utility;
+mod source;
 
 use std::env;
 use std::fs;
 use lexer::tokenizer::tokenize;
-use utility::span::SourceFile;
+use source::sourcefile::SourceFile;
 //use parser::ast::ASTNode;
 //use parser::parser::parse;
 
@@ -27,11 +28,11 @@ fn main() {
             return;
         }
     };
-    let file = SourceFile::new(input.clone());
     let input = input.replace("\r\n", "\n");
-    println!("Input:\n\n{}\n", input);
+    let file = SourceFile::new(input);
+    println!("Input:\n\n{}\n", file.source);
     
-    let lexer_result = tokenize(&input);
+    let lexer_result = tokenize(&file.source);
     if !lexer_result.errors.is_empty() {
         eprintln!("Lexer errors:");
         
