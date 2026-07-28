@@ -6,5 +6,6 @@ mod number_lexer;
 pub mod operator;
 pub mod punctuation;
 pub mod regex;
+mod regex_lexer;
 pub mod tokenizer;
 pub mod token;

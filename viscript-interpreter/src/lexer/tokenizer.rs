@@ -7,10 +7,13 @@ use crate::lexer::{
     literal:: Literal,
     operator::Operator,
     punctuation::Punctuation,
-    regex::TOKEN_REGEX,
+    regex::{
+        TOKEN_REGEX,
+        SKIP_REGEX,
+    },
     token::{
         Token, TokenKind,
-    }
+    },
 };
 use crate::common::strings::unescape_string;
 use crate::source::{
@@ -63,12 +66,28 @@ impl<'a> Lexer<'a> {
     fn next_token(&mut self) {
         let remaining = &self.source[self.pos..];
 
+        // Skippables handled first to avoid confusion with regular expressions
+        for (regex,kind) in SKIP_REGEX.iter() {
+            if let Some(mat) = regex.find(remaining) {
+                if mat.start() == 0 {
+                    self.handle_match(mat.as_str(), mat.end(), kind);
+                    return;
+                }
+            }
+        }
+
         if let Some(ch) = self.peek() {
             if ch.is_ascii_digit() || (ch == '.' && self.peek_next().map(
                 |c| c.is_ascii_digit()
             ).unwrap_or(false)) {
                 self.scan_number();
                 return;
+            }
+            if ch == '/' {
+                if !self.tokens.last().unwrap().value.can_end_expression() {
+                    self.scan_regex();
+                    return;
+                }
             }
         }
 
@@ -126,7 +145,7 @@ impl<'a> Lexer<'a> {
                 Token::Literal(Literal::String(unescape_string(text)))
             }
             TokenKind::RegExp => {
-                Token::Literal(Literal::RegExp(text.to_string()))
+                Token::Literal(Literal::RegExp(text.to_string().into()))
             }
             TokenKind::Directive => {
                 let name = text.strip_prefix('&').unwrap_or(text).to_string();

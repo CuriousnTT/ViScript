@@ -7,26 +7,34 @@ use crate::source::{
 
 #[derive(Debug)]
 pub enum LexerError {
+    InvalidBigInt { value: String, span: Span },
+    InvalidNumber { value: String, span: Span },
+    InvalidRegExp { value: String, span: Span },
     UnexpectedCharacter {char: char, span: Span },
     UnknownDirective { name: String, span: Span },
-    InvalidNumber { value: String, span: Span },
-    InvalidBigInt { value: String, span: Span },
+    UnterminatedRegex { text: String, span: Span },
 }
 
 impl fmt::Display for LexerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::UnexpectedCharacter {char, span } => {
-                write!(f, "Unexpected character: '{}'", char)
-            }
-            Self::UnknownDirective { name, span } => {
-                write!(f, "Unknown directive '{}'", name)
-            }
-            Self::InvalidNumber { value, span } => {
+            Self::InvalidNumber { value, .. } => {
                 write!(f, "Invalid number '{}'", value)
             }
-            Self::InvalidBigInt { value, span } => {
+            Self::InvalidBigInt { value, .. } => {
                 write!(f, "Invalid BigInt '{}'", value)
+            }
+            Self::InvalidRegExp { value, .. } => {
+                write!(f, "Invalid RegExp '{}'", value)
+            }
+            Self::UnexpectedCharacter {char, .. } => {
+                write!(f, "Unexpected character: '{}'", char)
+            }
+            Self::UnknownDirective { name, .. } => {
+                write!(f, "Unknown directive '{}'", name)
+            }
+            Self::UnterminatedRegex { text, .. } => {
+                write!(f, "Unterminated regex '{}'", text)
             }
         }
     }
@@ -37,10 +45,12 @@ impl std::error::Error for LexerError {}
 impl LexerError {
     pub fn span(&self) -> Span {
         match self {
+            Self::InvalidBigInt { span, .. } => *span,
+            Self::InvalidNumber { span, .. } => *span,
+            Self::InvalidRegExp { span, .. } => *span,
             Self::UnexpectedCharacter { span, .. } => *span,
             Self::UnknownDirective { span, .. } => *span,
-            Self::InvalidNumber { span, .. } => *span,
-            Self::InvalidBigInt { span, .. } => *span,
+            Self::UnterminatedRegex { span , .. } => *span,
         }
     }
 
