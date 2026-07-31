@@ -44,6 +44,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    /// tokenizes source, adding an EOF token at the end of the token list
     pub fn tokenize(mut self) -> LexerResult {
         while !self.is_eof() {
             self.next_token();
@@ -57,6 +58,31 @@ impl<'a> Lexer<'a> {
             },
         });
 
+        LexerResult {
+            tokens: self.tokens,
+            errors: self.errors
+        }
+    }
+
+    /// tokenize, but stops at until or EOF. If EOF, it adds EOF token.
+    pub fn tokenize_until(mut self, until: usize) -> LexerResult {
+        while !self.is_eof() {
+            if self.pos >= until {
+                break;
+            }
+            self.next_token();
+        }
+
+        if self.is_eof() {
+            self.tokens.push(Spanned {
+                value: Token::EOF,
+                span: Span {
+                    start: self.pos,
+                    end: self.pos,
+                },
+            });
+        }
+        
         LexerResult {
             tokens: self.tokens,
             errors: self.errors
@@ -88,6 +114,10 @@ impl<'a> Lexer<'a> {
                     self.scan_regex();
                     return;
                 }
+            }
+            if ch == '`' {
+                self.scan_template();
+                return;
             }
         }
 
@@ -219,6 +249,14 @@ impl<'a> Lexer<'a> {
     }
 }
 
+/// Creates a Lexer for the source_code and uses its tokenize method
 pub fn tokenize(source_code: &str) -> LexerResult {
     Lexer::new(source_code).tokenize()
+}
+
+/// Creates a Lexer for the source_code, tokenizing the range from start to stop.
+pub fn tokenize_range(source_code: &str, start: usize, stop: usize) -> LexerResult {
+    let mut lexer = Lexer::new(source_code);
+    lexer.pos = start;
+    lexer.tokenize_until(stop)
 }

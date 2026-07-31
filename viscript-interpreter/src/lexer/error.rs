@@ -12,7 +12,9 @@ pub enum LexerError {
     InvalidRegExp { value: String, span: Span },
     UnexpectedCharacter {char: char, span: Span },
     UnknownDirective { name: String, span: Span },
+    UnterminatedInterpolation { span: Span },
     UnterminatedRegex { text: String, span: Span },
+    UnterminatedTemplate { span: Span },
 }
 
 impl fmt::Display for LexerError {
@@ -33,8 +35,14 @@ impl fmt::Display for LexerError {
             Self::UnknownDirective { name, .. } => {
                 write!(f, "Unknown directive '{}'", name)
             }
-            Self::UnterminatedRegex { text, .. } => {
-                write!(f, "Unterminated regex '{}'", text)
+            Self::UnterminatedInterpolation { .. } => {
+                write!(f, "Unterminated interpolation (missing '}}')")
+            }
+            Self::UnterminatedRegex { .. }=> {
+                write!(f, "Unterminated regex (missing '/'")
+            }
+            Self::UnterminatedTemplate { .. } => {
+                write!(f, "Unterminated template (missing '`'")
             }
         }
     }
@@ -50,7 +58,9 @@ impl LexerError {
             Self::InvalidRegExp { span, .. } => *span,
             Self::UnexpectedCharacter { span, .. } => *span,
             Self::UnknownDirective { span, .. } => *span,
+            Self::UnterminatedInterpolation { span } => *span,
             Self::UnterminatedRegex { span , .. } => *span,
+            Self::UnterminatedTemplate { span } => *span,
         }
     }
 

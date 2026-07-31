@@ -92,6 +92,8 @@ pub enum Operator {
     RightShift,
     #[strum(serialize = ">>>")]
     UnsignedRightShift,
+    #[strum(serialize = "?")]
+    Conditional,
 
     // Logical
     #[strum(serialize = "&&")]

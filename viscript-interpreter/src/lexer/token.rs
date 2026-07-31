@@ -4,6 +4,7 @@ use crate::lexer::{
     literal::Literal,
     operator::Operator,
     punctuation::Punctuation,
+    template::Template,
 };
 
 /// Main Token abstraction
@@ -13,6 +14,7 @@ pub enum Token {
     Identifier(String),
 
     Literal(Literal),
+    Template(Template),
 
     // Syntax
     Operator(Operator),
