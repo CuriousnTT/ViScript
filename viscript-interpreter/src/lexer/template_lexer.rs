@@ -62,9 +62,9 @@ impl <'a> Lexer <'a> {
                             template_start,
                             |text| {
                                 if is_first {
-                                    Template::Complete(text)
+                                    Template::Head(text)
                                 } else {
-                                    Template::Tail(text)
+                                    Template::Middle(text)
                                 }
                             }
                         );
