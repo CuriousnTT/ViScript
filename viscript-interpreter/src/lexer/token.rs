@@ -24,56 +24,22 @@ pub enum Token {
 }
 
 impl Token {
-        pub fn can_end_expression(&self) -> bool {
-        match self {
-            Token::Literal(_) | Token::Identifier(_) => true,
 
-            // complete an expression
-            Token::Keyword(
-                Keyword::This
-                | Keyword::Super
-            ) => true,
-
-            Token::Punctuation(
-                Punctuation::RightParen
-                | Punctuation::RightBracket
-                | Punctuation::RightBrace
-            ) => true,
-
-            Token::Operator(
-                Operator::Division
-                | Operator::DivisionAssignment
-                | Operator::Increment
-                | Operator::Decrement
-            ) => true,
-
-            Token::Keyword(
-                Keyword::Return
-                | Keyword::Throw
-                | Keyword::Break
-                | Keyword::Continue
-                | Keyword::Else
-                | Keyword::Finally
-            ) => true,
-
-            _ => false,
-
-        }
+    pub fn is_less_than(&self) -> bool {
+        return matches!(
+            self, Token::Operator(Operator::LessThan)
+        )
     }
 }
 
-/// 1-dimensional look at recognized token types.
+/// 1-dimensional look at regex-lexed Token kinds.
 #[derive(Debug, Clone)]
 pub enum TokenKind {
-    Keyword,
     Skip,
     Null,
     Boolean,
     Undefined,
-    BigInt,
-    Numeric,
     String,
-    RegExp,
     Identifier,
     Operator,
     Punctuation,

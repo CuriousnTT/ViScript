@@ -4,12 +4,7 @@ use crate::lexer::{
     token::Token,
     tokenizer::Lexer,
 };
-use crate::source::{
-    span::{
-        Span,
-        Spanned,
-    },
-};
+use crate::source::span::Span;
 
 impl <'a> Lexer <'a> {
     pub(super) fn scan_number(&mut self) {
@@ -94,10 +89,7 @@ impl <'a> Lexer <'a> {
             Token::Literal(Literal::Numeric(text.to_string()))
         };
 
-        self.tokens.push(Spanned {
-            value: token,
-            span,
-        });
+        self.push_token(token, span);
     }
 
     fn validate_number(
