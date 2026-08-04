@@ -4,35 +4,26 @@ mod lexer;
 mod source;
 
 use std::env;
-use std::fs;
 use lexer::tokenizer::tokenize;
 use source::sourcefile::SourceFile;
 //use parser::ast::ASTNode;
 //use parser::parser::parse;
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     //Get test file from arguments
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage: {} <test_file>", args[0]);
-        return;
     };
     let filename = &args[1];
     println!("Reading {}...", filename);
-
-    //Read and adapt test file to avoid errors
-    let input = match fs::read_to_string(filename) {
-        Ok(content) => content,
-        Err(err) => {
-            eprintln!("Error reading file: {}", err);
-            return;
-        }
-    };
-    let input = input.replace("\r\n", "\n");
-    let file = SourceFile::new(input);
+    let file = SourceFile::new(filename)?;
     println!("Input:\n\n{}\n", file.source);
     
-    let lexer_result = tokenize(&file.source);
+    let lexer_result = tokenize(
+        &file.source,
+        file.is_vsx()
+    );
     if !lexer_result.errors.is_empty() {
         eprintln!("Lexer errors:");
         
@@ -52,4 +43,5 @@ fn main() {
     //let input_bytes = &input.as_bytes();
     //let ast: ASTNode = parse(&tokens);
     //println!("Token AST:\n{:?}", ast);
+    Ok(())
 }

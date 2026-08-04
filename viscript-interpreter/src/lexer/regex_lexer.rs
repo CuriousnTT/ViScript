@@ -157,12 +157,12 @@ impl <'a> Lexer <'a> {
     }
 
     pub(super) fn should_scan_regex(&self) -> bool {
-        let Some(last) = self.tokens.last() else {
-            return true;
+        if !self.expr_allowed {
+            return false;
         };
 
-        if !self.regex_allowed {
-            return false;
+        let Some(last) = self.tokens.last() else {
+            return true;
         };
 
         if last.value.is_less_than() {

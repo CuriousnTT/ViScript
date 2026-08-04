@@ -12,3 +12,5 @@ pub mod template;
 mod template_lexer;
 pub mod tokenizer;
 pub mod token;
+pub mod vsx;
+pub mod vsx_lexer;

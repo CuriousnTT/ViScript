@@ -1,12 +1,20 @@
+use std::fs;
+use std::path::PathBuf;
+
 use crate::source::span::Span;
 
 pub struct SourceFile {
+    pub file_path: PathBuf,
     pub source: String,
     pub line_starts: Vec<usize>, // byte offsets of each line
 }
 
 impl SourceFile {
-    pub fn new(source: String) -> Self {
+    pub fn new(filename: &str) -> Result<Self, std::io::Error> {
+        //Read and adapt test file to avoid errors
+        let source = fs::read_to_string(filename)?
+            .replace("\r\n", "\n");
+
         let mut line_starts = vec![0];
 
         for (i, ch) in source.char_indices() {
@@ -15,7 +23,13 @@ impl SourceFile {
             }
         }
 
-        Self { source, line_starts }
+        Ok(
+            Self {
+                file_path: PathBuf::from(filename),
+                source,
+                line_starts
+            }
+        )
     }
 
     /// returns the line number (0-based) and column (0-based) for a byte position
@@ -82,5 +96,13 @@ impl SourceFile {
         }
 
         output
+    }
+
+    /// returns true for file extensions .jsx, .tsx & .vsx.
+    pub fn is_vsx(&self) -> bool {
+        matches!(
+            self.file_path.extension().and_then(|s| s.to_str()),
+            Some("jsx" | "tsx" | "vsx")
+        )
     }
 }

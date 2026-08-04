@@ -92,6 +92,7 @@ impl <'a> Lexer <'a> {
 
                         let inner_result = tokenize_range(
                             self.source,
+                            self.vsx_enabled,
                             interpolation_start,
                             interpolation_end
                         );

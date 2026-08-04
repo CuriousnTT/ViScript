@@ -1,4 +1,5 @@
-use std::str::FromStr;use crate::lexer::{
+use std::str::FromStr;
+use crate::lexer::{
     contexts::{
         BraceContext,
         ParenContext,
@@ -28,7 +29,8 @@ use crate::source::{
 pub struct Lexer<'a> {
     pub(super) source: &'a str,
     pub(super) pos: usize,
-    pub(super) regex_allowed: bool,
+    pub(super) expr_allowed: bool,
+    pub(super) vsx_enabled: bool,
     
     paren_stack: Vec<ParenContext>,
     brace_stack: Vec<BraceContext>,
@@ -38,11 +40,16 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(source:&'a str) -> Self {
+    /// vsx is disabled by default
+    pub fn new(source: &'a str) -> Self {
+        Self::new_with_vsx(source, false)
+    }
+    pub fn new_with_vsx(source:&'a str, vsx_enabled: bool) -> Self {
         Self {
             source,
             pos: 0,
-            regex_allowed: true,
+            expr_allowed: true,
+            vsx_enabled: vsx_enabled,
             paren_stack: Vec::new(),
             brace_stack: Vec::new(),
             tokens: Vec::new(),
@@ -113,6 +120,12 @@ impl<'a> Lexer<'a> {
                 self.scan_regex();
                 return;
             }
+            if self.vsx_enabled && ch == '<' {
+                if self.should_scan_vsx() { // handled after vsx_enabled for being heavier
+                    self.scan_vsx();
+                    return;
+                }
+            }
             if ch == '`' {
                 self.scan_template();
                 return;
@@ -163,17 +176,8 @@ impl<'a> Lexer<'a> {
             TokenKind::Boolean => {
                 Token::Literal(Literal::Boolean(text == "true"))
             }
-            TokenKind::BigInt => {
-                Token::Literal(Literal::BigInt(text.to_string()))
-            }
-            TokenKind::Numeric => {
-                Token::Literal(Literal::Numeric(text.to_string()))
-            }
             TokenKind::String => {
                 Token::Literal(Literal::String(unescape_string(text)))
-            }
-            TokenKind::RegExp => {
-                Token::Literal(Literal::RegExp(text.to_string().into()))
             }
             TokenKind::Directive => {
                 let name = text.strip_prefix('&').unwrap_or(text).to_string();
@@ -255,6 +259,16 @@ impl<'a> Lexer<'a> {
         None
     }
 
+    /// Returns the byte distance from self.pos to next case of 'c'
+    /// Returns 'None' if it is not found
+    pub(super) fn next_instance_of_char(&self, c: char) -> Option<usize> {
+        self.source[self.pos..]
+            .char_indices()
+            .find(
+            |(_, ch) | *ch == c)
+            .map(|(offset, _) | offset)
+    }
+
     pub(super) fn advance(&mut self) -> Option<char> {
         let ch = self.peek()?;
         self.pos += ch.len_utf8();
@@ -266,11 +280,11 @@ impl<'a> Lexer<'a> {
     }
 
     fn update_context(&mut self, token: &Token) {
-        // 1. Always update the simple regex_allowed flag first
+        // 1. Always update the simple expr_allowed flag first
         //    (covers identifiers, literals, most operators, keywords, …)
-        self.update_regex_allowed(token);
+        self.update_expr_allowed(token);
 
-        // 2. Maintain the stacks (and override regex_allowed when a close happens)
+        // 2. Maintain the stacks (and override expr_allowed when a close happens)
         match token {
             // ---------- parentheses ----------
             Token::Punctuation(Punctuation::LeftParen) => {
@@ -287,13 +301,13 @@ impl<'a> Lexer<'a> {
                 };
                 self.paren_stack.push(ctx);
                 // Opening paren itself always allows a regex afterwards
-                // (already set by update_regex_allowed)
+                // (already set by update_expr_allowed)
             }
 
             Token::Punctuation(Punctuation::RightParen) => {
                 if let Some(ctx) = self.paren_stack.pop() {
                     // The decisive part:
-                    self.regex_allowed = match ctx {
+                    self.expr_allowed = match ctx {
                         ParenContext::Expression => false, // ends a PrimaryExpression
                         // control-flow parens end a condition -> statement can start
                         ParenContext::If
@@ -304,7 +318,7 @@ impl<'a> Lexer<'a> {
                     };
                 } else {
                     // Unmatched `)` – treat as expression-style for safety
-                    self.regex_allowed = false;
+                    self.expr_allowed = false;
                 }
             }
 
@@ -313,7 +327,7 @@ impl<'a> Lexer<'a> {
                 // Heuristic: if a regex would currently be *disallowed*,
                 // we are almost certainly inside an expression context → object.
                 // Otherwise it is a block.
-                let ctx = if self.regex_allowed {
+                let ctx = if self.expr_allowed {
                     BraceContext::Block
                 } else {
                     BraceContext::Object
@@ -324,27 +338,27 @@ impl<'a> Lexer<'a> {
 
             Token::Punctuation(Punctuation::RightBrace) => {
                 if let Some(ctx) = self.brace_stack.pop() {
-                    self.regex_allowed = match ctx {
+                    self.expr_allowed = match ctx {
                         BraceContext::Block  => true,  // new statement can start
                         BraceContext::Object => false, // ends a PrimaryExpression
                     };
                 } else {
                     // Unmatched `}` – treat as block-style
-                    self.regex_allowed = true;
+                    self.expr_allowed = true;
                 }
             }
 
-            // Everything else is already handled by update_regex_allowed
+            // Everything else is already handled by update_expr_allowed
             _ => {}
         }
     }
 
-    fn update_regex_allowed(&mut self, token: &Token) {
+    fn update_expr_allowed(&mut self, token: &Token) {
         use Keyword::*;
         use Operator::*;
         use Punctuation::*;
 
-        self.regex_allowed = match token {
+        self.expr_allowed = match token {
             // Primary expressions → regex forbidden
             Token::Identifier(_) | Token::Literal(_) => false,
 
@@ -367,17 +381,21 @@ impl<'a> Lexer<'a> {
             }
 
             // Everything else (directives, EOF, …) – keep previous state
-            _ => self.regex_allowed,
+            _ => self.expr_allowed,
         };
     }
 }
 
 /// Creates a Lexer for the source_code and uses its tokenize method
-pub fn tokenize(source_code: &str) -> LexerResult {
-    Lexer::new(source_code).tokenize()
-}/// Creates a Lexer for the source_code, tokenizing the range from start to stop.
-pub fn tokenize_range(source_code: &str, start: usize, stop: usize) -> LexerResult {
-    let mut lexer = Lexer::new(source_code);
+pub fn tokenize(source_code: &str, vsx_enabled: bool) -> LexerResult {
+    Lexer::new_with_vsx(source_code, vsx_enabled).tokenize()
+}
+
+/// Creates a Lexer for the source_code, tokenizing the range from start to stop.
+pub fn tokenize_range(
+    source_code: &str, vsx_enabled: bool, start: usize, stop: usize
+) -> LexerResult {
+    let mut lexer = Lexer::new_with_vsx(source_code, vsx_enabled);
     lexer.pos = start;
     lexer.tokenize_until(stop)
 }

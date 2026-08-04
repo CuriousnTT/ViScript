@@ -12,6 +12,12 @@ lazy_static! {
         (Regex::new(r"/\*[\s\S]*?\*/").unwrap(), TokenKind::Skip),
     ];
 
+    // Regex used outside of token generation
+    /// Matches all identifiers and keywords
+    /// -> must be disentangled when that matters.
+    pub static ref IDENTIFIER_REGEX: Regex =
+        Regex::new(r"[\p{L}_$][\p{L}\p{N}_$]*").unwrap();
+
     /// Regex for all kinds of tokens
     pub static ref TOKEN_REGEX: Vec<(Regex, TokenKind)> = vec![
         // 1. Whitespace & comments (skip)
@@ -33,7 +39,7 @@ lazy_static! {
         (Regex::new(r"'(?:\\.|[^\\'])*'").unwrap(), TokenKind::String),
     
         // 4.  Identifiers & keywords
-        (Regex::new(r"[\p{L}_$][\p{L}\p{N}_$]*").unwrap(), TokenKind::Identifier),
+        (IDENTIFIER_REGEX.clone(), TokenKind::Identifier),
 
         // Punctuation & operators (longest first!)
         (Regex::new(concat!(

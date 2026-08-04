@@ -5,6 +5,7 @@ use crate::lexer::{
     operator::Operator,
     punctuation::Punctuation,
     template::Template,
+    vsx::VSX,
 };
 
 /// Main Token abstraction
@@ -16,18 +17,33 @@ pub enum Token {
     Literal(Literal),
     Template(Template),
 
+    // VSX
+    VSX(VSX),
+
     // Syntax
     Operator(Operator),
     Punctuation(Punctuation),
     Directive(Directive),
-    EOF,
+    EOF
 }
 
 impl Token {
-
     pub fn is_less_than(&self) -> bool {
         return matches!(
             self, Token::Operator(Operator::LessThan)
+        )
+    }
+
+    /// True for any operator whose spelling contains '<'
+    pub fn is_less_than_family(&self) -> bool {
+        matches!(
+            self,
+            Token::Operator(
+                Operator::LessThan
+                | Operator::LessThanOrEqual
+                | Operator::LeftShift
+                | Operator::LeftShiftAssignment
+            )
         )
     }
 }
@@ -35,6 +51,7 @@ impl Token {
 /// 1-dimensional look at regex-lexed Token kinds.
 #[derive(Debug, Clone)]
 pub enum TokenKind {
+    Keyword,
     Skip,
     Null,
     Boolean,
