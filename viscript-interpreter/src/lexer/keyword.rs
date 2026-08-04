@@ -24,6 +24,7 @@ pub enum Keyword {
     For,
     While,
     Do,
+    With,
 
     Break,
     Continue,
@@ -84,4 +85,5 @@ pub enum Keyword {
 
     // Special
     Of,
+    Void,
 }

@@ -1,6 +1,8 @@
-use std::str::FromStr;
-
-use crate::lexer::{
+use std::str::FromStr;use crate::lexer::{
+    contexts::{
+        BraceContext,
+        ParenContext,
+    },
     directive::Directive,
     error::LexerError,
     keyword::Keyword,
@@ -8,10 +10,8 @@ use crate::lexer::{
     operator::Operator,
     punctuation::Punctuation,
     regex::{
-        TOKEN_REGEX,
-        SKIP_REGEX,
-    },
-    token::{
+        SKIP_REGEX, TOKEN_REGEX,
+    }, token::{
         Token, TokenKind,
     },
 };
@@ -21,15 +21,18 @@ use crate::source::{
         Span,
         Spanned,
     },
-};
-
-pub struct LexerResult {
+};pub struct LexerResult {
     pub tokens: Vec<Spanned<Token>>,
     pub errors: Vec<LexerError>,
 }
 pub struct Lexer<'a> {
     pub(super) source: &'a str,
     pub(super) pos: usize,
+    pub(super) regex_allowed: bool,
+    
+    paren_stack: Vec<ParenContext>,
+    brace_stack: Vec<BraceContext>,
+
     pub(super) tokens: Vec<Spanned<Token>>,
     pub(super) errors: Vec<LexerError>,
 }
@@ -39,6 +42,9 @@ impl<'a> Lexer<'a> {
         Self {
             source,
             pos: 0,
+            regex_allowed: true,
+            paren_stack: Vec::new(),
+            brace_stack: Vec::new(),
             tokens: Vec::new(),
             errors: Vec::new(),
         }
@@ -50,13 +56,10 @@ impl<'a> Lexer<'a> {
             self.next_token();
         }
 
-        self.tokens.push(Spanned {
-            value: Token::EOF,
-            span: Span {
-                start: self.pos,
-                end: self.pos,
-            },
-        });
+        self.push_token(
+            Token::EOF,
+            Span::new(self.pos, self.pos)
+        );
 
         LexerResult {
             tokens: self.tokens,
@@ -74,13 +77,10 @@ impl<'a> Lexer<'a> {
         }
 
         if self.is_eof() {
-            self.tokens.push(Spanned {
-                value: Token::EOF,
-                span: Span {
-                    start: self.pos,
-                    end: self.pos,
-                },
-            });
+            self.push_token(
+                Token::EOF,
+                Span::new(self.pos, self.pos)
+            );
         }
         
         LexerResult {
@@ -109,11 +109,9 @@ impl<'a> Lexer<'a> {
                 self.scan_number();
                 return;
             }
-            if ch == '/' {
-                if !self.tokens.last().unwrap().value.can_end_expression() {
-                    self.scan_regex();
-                    return;
-                }
+            if ch == '/' && self.should_scan_regex() {
+                self.scan_regex();
+                return;
             }
             if ch == '`' {
                 self.scan_template();
@@ -222,8 +220,18 @@ impl<'a> Lexer<'a> {
             }
         };
 
-        self.tokens.push(Spanned { value: token, span: span});
+        self.push_token(token, span);
         self.pos += length;
+    }
+
+    /// method for pushing tokens while updating lexer state
+    /// should be used in all cases that don't rely on nested lexers
+    pub(super) fn push_token(&mut self, token:Token, span: Span) {
+        self.update_context(&token);
+        self.tokens.push(Spanned {
+            value: token,
+            span,
+        })
     }
 
     pub(super) fn peek(&self) -> Option<char> {
@@ -238,6 +246,15 @@ impl<'a> Lexer<'a> {
         self.source[self.pos..].chars().nth(n)
     }
 
+    pub(super) fn peek_next_non_whitespace(&self) -> Option<char> {
+        for c in self.source[self.pos..].chars().skip(1) {
+            if !c.is_whitespace() {
+                return Some(c);
+            }
+        }
+        None
+    }
+
     pub(super) fn advance(&mut self) -> Option<char> {
         let ch = self.peek()?;
         self.pos += ch.len_utf8();
@@ -247,14 +264,118 @@ impl<'a> Lexer<'a> {
     pub(super) fn is_eof(&self) -> bool {
         self.pos >= self.source.len()
     }
+
+    fn update_context(&mut self, token: &Token) {
+        // 1. Always update the simple regex_allowed flag first
+        //    (covers identifiers, literals, most operators, keywords, …)
+        self.update_regex_allowed(token);
+
+        // 2. Maintain the stacks (and override regex_allowed when a close happens)
+        match token {
+            // ---------- parentheses ----------
+            Token::Punctuation(Punctuation::LeftParen) => {
+                // Decide which kind of paren this is.
+                // Look at the *previous* token (already pushed) to recognise
+                // if / while / for / with / catch.
+                let ctx = match self.tokens.last().map(|t| &t.value) {
+                    Some(Token::Keyword(Keyword::If))    => ParenContext::If,
+                    Some(Token::Keyword(Keyword::While)) => ParenContext::While,
+                    Some(Token::Keyword(Keyword::For))   => ParenContext::For,
+                    Some(Token::Keyword(Keyword::With))  => ParenContext::With,
+                    Some(Token::Keyword(Keyword::Catch)) => ParenContext::Catch,
+                    _ => ParenContext::Expression,
+                };
+                self.paren_stack.push(ctx);
+                // Opening paren itself always allows a regex afterwards
+                // (already set by update_regex_allowed)
+            }
+
+            Token::Punctuation(Punctuation::RightParen) => {
+                if let Some(ctx) = self.paren_stack.pop() {
+                    // The decisive part:
+                    self.regex_allowed = match ctx {
+                        ParenContext::Expression => false, // ends a PrimaryExpression
+                        // control-flow parens end a condition -> statement can start
+                        ParenContext::If
+                        | ParenContext::While
+                        | ParenContext::For
+                        | ParenContext::With
+                        | ParenContext::Catch => true,
+                    };
+                } else {
+                    // Unmatched `)` – treat as expression-style for safety
+                    self.regex_allowed = false;
+                }
+            }
+
+            // ---------- braces ----------
+            Token::Punctuation(Punctuation::LeftBrace) => {
+                // Heuristic: if a regex would currently be *disallowed*,
+                // we are almost certainly inside an expression context → object.
+                // Otherwise it is a block.
+                let ctx = if self.regex_allowed {
+                    BraceContext::Block
+                } else {
+                    BraceContext::Object
+                };
+                self.brace_stack.push(ctx);
+                // Opening brace itself always allows a regex (already set)
+            }
+
+            Token::Punctuation(Punctuation::RightBrace) => {
+                if let Some(ctx) = self.brace_stack.pop() {
+                    self.regex_allowed = match ctx {
+                        BraceContext::Block  => true,  // new statement can start
+                        BraceContext::Object => false, // ends a PrimaryExpression
+                    };
+                } else {
+                    // Unmatched `}` – treat as block-style
+                    self.regex_allowed = true;
+                }
+            }
+
+            // Everything else is already handled by update_regex_allowed
+            _ => {}
+        }
+    }
+
+    fn update_regex_allowed(&mut self, token: &Token) {
+        use Keyword::*;
+        use Operator::*;
+        use Punctuation::*;
+
+        self.regex_allowed = match token {
+            // Primary expressions → regex forbidden
+            Token::Identifier(_) | Token::Literal(_) => false,
+
+            // Keywords that introduce an expression / statement that can be followed by /
+            Token::Keyword(Return | Throw | Delete | Void | Typeof | New | Yield | Await) => true,
+
+            // Most operators allow a regex (they expect an expression)
+            Token::Operator(op) => match op {
+                Increment | Decrement => false, // postfix
+                _ => true,
+            },
+
+            // Opening punctuation always allows a regex
+            Token::Punctuation(LeftParen | LeftBrace | LeftBracket | Comma | Colon | Semicolon) => true,
+
+            // Closing punctuation – *do not decide here*; the stack will override
+            Token::Punctuation(RightParen | RightBrace | RightBracket) => {
+                // temporary value; will be replaced by update_context
+                false
+            }
+
+            // Everything else (directives, EOF, …) – keep previous state
+            _ => self.regex_allowed,
+        };
+    }
 }
 
 /// Creates a Lexer for the source_code and uses its tokenize method
 pub fn tokenize(source_code: &str) -> LexerResult {
     Lexer::new(source_code).tokenize()
-}
-
-/// Creates a Lexer for the source_code, tokenizing the range from start to stop.
+}/// Creates a Lexer for the source_code, tokenizing the range from start to stop.
 pub fn tokenize_range(source_code: &str, start: usize, stop: usize) -> LexerResult {
     let mut lexer = Lexer::new(source_code);
     lexer.pos = start;

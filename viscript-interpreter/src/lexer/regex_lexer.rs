@@ -6,12 +6,7 @@ use crate::lexer::{
     token::Token,
     tokenizer::Lexer,
 };
-use crate::source::{
-    span::{
-        Span,
-        Spanned,
-    },
-};
+use crate::source::span::Span;
 
 struct RegexBody {
     body_end: usize, // position of closing candidate closing '/'
@@ -89,7 +84,6 @@ impl <'a> Lexer <'a> {
     }
 
     fn scan_regex_flags(&mut self) -> RegexFlags {
-        let start = self.pos;
         let mut flags = String::new();
         let mut duplicate: HashSet<char> = HashSet::new();
         let mut invalid: HashSet<char> = HashSet::new();
@@ -139,10 +133,10 @@ impl <'a> Lexer <'a> {
                 LexerError::UnterminatedRegex { text: text.to_string(), span }
             );
 
-            self.tokens.push(Spanned {
-                value: Token::Literal(Literal::RegExp(text.to_string().into())),
-                span: span,
-            });
+            self.push_token(
+                Token::Literal(Literal::RegExp(text.to_string().into())),
+                span
+            );
 
             self.pos = end; // Rewind so other tokens can be lexed.
             return;
@@ -155,14 +149,30 @@ impl <'a> Lexer <'a> {
             self.errors.push(LexerError::InvalidRegExp { value: text.to_string(), span });
         }
 
-        self.tokens.push(Spanned {
-            value: Token::Literal(Literal::RegExp(text.to_string().into())),
+        self.push_token(
+            Token::Literal(Literal::RegExp(text.to_string().into())),
             span
-        });
+        );
 
     }
 
-    pub(super) fn can_end_expression(token: &Token) -> bool {
-        token.can_end_expression()
+    pub(super) fn should_scan_regex(&self) -> bool {
+        let Some(last) = self.tokens.last() else {
+            return true;
+        };
+
+        if !self.regex_allowed {
+            return false;
+        };
+
+        if last.value.is_less_than() {
+            return false;
+        };
+
+        if self.peek_next_non_whitespace() == Some('>') {
+            return false;
+        };
+
+        return true;
     }
 }
