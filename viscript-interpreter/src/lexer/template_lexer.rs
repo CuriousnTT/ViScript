@@ -71,7 +71,7 @@ impl <'a> Lexer <'a> {
 
                         self.advance(); self.advance(); // the ${
                         let interpolation_start = self.pos;
-                        let interpolation_end = match self.find_interpolation_end() {
+                        let interpolation_end = match self.find_expression_end() {
                             Some(end) => end,
                             None => {
                                 // unterminated interpolation
@@ -128,54 +128,6 @@ impl <'a> Lexer <'a> {
         // Skip validation for now to see how it behaves
         self.tokens.extend(template_tokens);
         self.errors.extend(template_errors);
-    }
-
-    /// Iterates until brace_depth is zero or it runs out of source code.
-    /// Advances until it finds the closing brace
-    fn find_interpolation_end(&mut self) -> Option<usize> {
-        let mut brace_depth = 1; // '${' was already consumed
-
-        while !self.is_eof() {
-            match self.peek() {
-                Some('}') => {
-                    brace_depth -= 1;
-                    if brace_depth == 0 {
-                        let end_pos = self.pos;
-                        return Some(end_pos);
-                    }
-                }
-                Some('{') => {
-                    brace_depth += 1;
-                }
-                Some('\\') => {
-                    // Skip escaped characters
-                    self.advance();
-                    if !self.is_eof() {
-                        self.advance();
-                        continue;
-                    }
-                }
-                Some('\'') | Some('"') | Some('`') => {
-                    let quote = self.advance().unwrap();
-                    while !self.is_eof() {
-                        if self.peek() == Some('\\') {
-                            self.advance();
-                            self.advance();
-                            continue;
-                        }
-                        if self.peek() == Some(quote) {
-                            self.advance();
-                            break;
-                        }
-                        self.advance();
-                    }
-                    continue;
-                }
-                _ => {}
-            }
-            self.advance();
-        }
-        None
     }
 
     /// Creates and pushes a token of the specified kind, ending on the current position.
