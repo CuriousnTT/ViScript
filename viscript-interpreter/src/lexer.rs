@@ -3,6 +3,8 @@ pub mod directive;
 pub mod error;
 pub mod keyword;
 pub mod literal;
+mod lookahead_lexer;
+mod nested_lexing_support;
 mod number_lexer;
 pub mod operator;
 pub mod punctuation;

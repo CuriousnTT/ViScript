@@ -114,3 +114,27 @@ pub enum Operator {
     #[strum(serialize = "...")]
     Spread,
 }
+
+impl Operator {
+    /// returns true for Operators that are legal at the top level of a VSX
+    /// opening tag's attribute list (outside of expressions)
+    /// 
+    /// NOTE: Rules apply differently immediately after VSX tag *names*
+    /// Ex: A VSX element can be defined as
+    /// <NameSpace-Element<Type, Argument>
+    ///   /*Attributes follow */
+    /// />
+    /// LessThan and GreaterThan mark rule boundaries.
+    /// They are only legal in exactly that position.
+    pub fn legal_in_vsx(self) -> bool {
+        matches!(
+            self,
+
+            //Attribute assignment
+            Self::Assignment    // =
+
+            // Omit LessThan & GreaterThan?
+
+        )
+    }
+}

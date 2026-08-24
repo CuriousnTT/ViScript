@@ -128,6 +128,7 @@ impl <'a> Lexer <'a> {
         // Skip validation for now to see how it behaves
         self.tokens.extend(template_tokens);
         self.errors.extend(template_errors);
+        self.expr_allowed = false;
     }
 
     /// Creates and pushes a token of the specified kind, ending on the current position.

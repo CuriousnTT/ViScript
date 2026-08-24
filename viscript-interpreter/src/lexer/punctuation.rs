@@ -58,6 +58,30 @@ impl Punctuation {
             _ => None,
         }
     }
+
+    /// returns true for punctuation that is legal at the top level of a VSX
+    /// opening tag's attribute list (outside of expressions)
+    /// 
+    /// NOTE: Rules apply differently in VSX tag *names*
+    /// Ex: A VSX element can be defined as
+    /// <NameSpace.Element
+    ///   /*Attributes follow */
+    /// />
+    /// Dot *is* legal when used to access a namespace for a tag name.
+    /// legal_in_vsx applies the post-name rules.
+    pub fn legal_in_vsx(self) -> bool {
+        matches!(
+            self,
+            // expression containers
+            Self::LeftBrace
+            | Self::RightBrace
+
+            // Namespaced attribute names (xlink:href)
+            | Self::Colon
+
+            // not Self::Dot
+        )
+    }
 }
 
 impl fmt::Display for Punctuation {

@@ -74,20 +74,17 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    /// tokenize, but stops at until or EOF. If EOF, it adds EOF token.
+    /// tokenize, but stops at until or EOF. Does *NOT* add EOF token, even for EOF.
+    /// 'until' is mostly symbolic: The idiomatic way to call this method is through tokenize_range.
+    /// This is because token-lexing methods may exceed 'until' before returning to the main loop,
+    /// resulting in the method overshooting its target.
+    /// This is not a risk with tokenize_range, which makes a Lexer that doesn't see beyond 'until'.
     pub fn tokenize_until(mut self, until: usize) -> LexerResult {
         while !self.is_eof() {
             if self.pos >= until {
                 break;
             }
             self.next_token();
-        }
-
-        if self.is_eof() {
-            self.push_token(
-                Token::EOF,
-                Span::new(self.pos, self.pos)
-            );
         }
         
         LexerResult {
@@ -238,37 +235,6 @@ impl<'a> Lexer<'a> {
         })
     }
 
-    pub(super) fn peek(&self) -> Option<char> {
-        self.source[self.pos..].chars().next()
-    }
-
-    pub(super) fn peek_next(&self) -> Option<char> {
-        self.source[self.pos..].chars().nth(1)
-    }
-
-    pub(super) fn peek_n(&self, n: usize) -> Option<char> {
-        self.source[self.pos..].chars().nth(n)
-    }
-
-    pub(super) fn peek_next_non_whitespace(&self) -> Option<char> {
-        for c in self.source[self.pos..].chars().skip(1) {
-            if !c.is_whitespace() {
-                return Some(c);
-            }
-        }
-        None
-    }
-
-    /// Returns the byte distance from self.pos to next case of 'c'
-    /// Returns 'None' if it is not found
-    pub(super) fn next_instance_of_char(&self, c: char) -> Option<usize> {
-        self.source[self.pos..]
-            .char_indices()
-            .find(
-            |(_, ch) | *ch == c)
-            .map(|(offset, _) | offset)
-    }
-
     pub(super) fn advance(&mut self) -> Option<char> {
         let ch = self.peek()?;
         self.pos += ch.len_utf8();
@@ -395,7 +361,8 @@ pub fn tokenize(source_code: &str, vsx_enabled: bool) -> LexerResult {
 pub fn tokenize_range(
     source_code: &str, vsx_enabled: bool, start: usize, stop: usize
 ) -> LexerResult {
-    let mut lexer = Lexer::new_with_vsx(source_code, vsx_enabled);
+    let source = &source_code[..stop];
+    let mut lexer = Lexer::new_with_vsx(source, vsx_enabled);
     lexer.pos = start;
     lexer.tokenize_until(stop)
 }

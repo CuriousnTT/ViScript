@@ -119,16 +119,23 @@ impl <'a> Lexer <'a> {
 
     /// Skip a regular-expression literal, even if it uses the 'x' flag
     /// NOT a token-generating/validating method
-    /// Only skips until newline for multiline regex without the 'x' flag.
+    /// Does not skip unterminated regex
     /// Note that this will result in an error if lexed
-    pub(super) fn skip_regex_literal(&mut self) {
+    pub(super) fn skip_regex_literal(&mut self) -> bool {
         self.advance(); // opening /
 
         let body = self.scan_regex_body();
         let flags = self.scan_regex_flags();
-        if !flags.flags.contains('x') && body.first_newline.is_some() {
-            self.pos = body.first_newline.unwrap();
+        if body.body_end == self.pos {
+            return false;
         }
+        if !flags.flags.contains('x') && body.first_newline.is_some() {
+            return false;
+        }
+        if self.is_eof() {
+            return false
+        }
+        true
     }
 
     fn validate_regex(&mut self, start: usize, body: RegexBody, flags: RegexFlags) {
@@ -183,7 +190,7 @@ impl <'a> Lexer <'a> {
             return false;
         };
 
-        if self.peek_next_non_whitespace() == Some('>') {
+        if self.peek_next_non_whitespace(&[]) == Some('>') {
             return false;
         };
 

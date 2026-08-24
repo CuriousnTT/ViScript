@@ -87,3 +87,27 @@ pub enum Keyword {
     Of,
     Void,
 }
+
+impl Keyword {
+    /// Returns true for Keywords that are TypeScript-specific
+    pub fn is_type_keyword(self) -> bool {
+        matches!(
+            self,
+            Self::Type
+            | Self::Interface
+            | Self::Enum
+            | Self::Infer
+            | Self::Keyof
+            | Self::Declare
+            | Self::Namespace
+            | Self::Readonly
+            | Self::Void
+            | Self::As
+            | Self::Is
+            | Self::Implements
+            | Self::Extends
+            | Self::Instanceof
+            | Self::In
+        )
+    }
+}

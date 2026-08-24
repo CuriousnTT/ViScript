@@ -16,7 +16,12 @@ function render(items) {
   return (
     <ul>
       {items.map(item => (
-        <li key={item.id}>
+        <li
+        key={item.id}
+        // apparently this is OK?
+        /* And
+        This, too!? */
+        >
           {`${item.name}: ${
             item.details
               ? `extra ${item.details.note ?? `fallback-${item.id}`}`

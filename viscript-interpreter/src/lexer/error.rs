@@ -15,6 +15,9 @@ pub enum LexerError {
     UnterminatedInterpolation { span: Span },
     UnterminatedRegex { text: String, span: Span },
     UnterminatedTemplate { span: Span },
+    UnterminatedTypeArgument { span: Span },
+    UnterminatedVSXElement { span: Span },
+    UnterminatedVSXExpression {span: Span },
 }
 
 impl fmt::Display for LexerError {
@@ -44,6 +47,15 @@ impl fmt::Display for LexerError {
             Self::UnterminatedTemplate { .. } => {
                 write!(f, "Unterminated template (missing '`'")
             }
+            Self::UnterminatedTypeArgument { .. } => {
+                write!(f, "Unterminated type argument (missing '>'")
+            }
+            Self::UnterminatedVSXElement { .. } => {
+                write!(f, "Unterminated VSX Element (missing closing tag ('>' or '/>'))")
+            }
+            Self::UnterminatedVSXExpression { .. } => {
+                write!(f, "Unterminated VSX Expression (missing closing tag '}}')")
+            }
         }
     }
 }
@@ -61,6 +73,9 @@ impl LexerError {
             Self::UnterminatedInterpolation { span } => *span,
             Self::UnterminatedRegex { span , .. } => *span,
             Self::UnterminatedTemplate { span } => *span,
+            Self::UnterminatedTypeArgument { span } => *span,
+            Self::UnterminatedVSXElement { span } => *span,
+            Self::UnterminatedVSXExpression { span } => *span,
         }
     }
 
