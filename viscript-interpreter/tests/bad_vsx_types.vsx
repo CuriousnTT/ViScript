@@ -1,0 +1,5 @@
+<WrappingElement>
+    <NestedElement<Type
+        <SomethingElse>
+    </SomethingElse>
+</WrappingElement>
