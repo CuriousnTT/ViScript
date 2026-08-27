@@ -15,6 +15,9 @@ pub enum Punctuation {
 
     LeftBracket,
     RightBracket,
+
+    LeftSetBracket,
+    RightSetBracket,
 }
 
 impl Punctuation {
@@ -35,25 +38,31 @@ impl Punctuation {
 
             Self::LeftBracket => "[",
             Self::RightBracket => "]",
+
+            Self::LeftSetBracket => "[|",
+            Self::RightSetBracket => "|]",
         }
     }
 
     #[inline]
-    pub const fn from_char(s: char) -> Option<Self> {
+    pub fn from_str(s: &str) -> Option<Self> {
         match s {
-            '.' => Some(Self::Dot),
-            ':' => Some(Self::Colon),
-            ';' => Some(Self::Semicolon),
-            ',' => Some(Self::Comma),
+            "." => Some(Self::Dot),
+            ":" => Some(Self::Colon),
+            ";" => Some(Self::Semicolon),
+            "," => Some(Self::Comma),
 
-            '(' => Some(Self::LeftParen),
-            ')' => Some(Self::RightParen),
-            
-            '{' => Some(Self::LeftBrace),
-            '}' => Some(Self::RightBrace),
-            
-            '[' => Some(Self::LeftBracket),
-            ']' => Some(Self::RightBracket),
+            "(" => Some(Self::LeftParen),
+            ")" => Some(Self::RightParen),
+
+            "{" => Some(Self::LeftBrace),
+            "}" => Some(Self::RightBrace),
+
+            "[" => Some(Self::LeftBracket),
+            "]" => Some(Self::RightBracket),
+
+            "[|" => Some(Self::LeftSetBracket),
+            "|]" => Some(Self::RightSetBracket),
 
             _ => None,
         }

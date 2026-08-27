@@ -208,15 +208,15 @@ impl<'a> Lexer<'a> {
                     return;
                 }
             }
-            TokenKind::Punctuation => {
-                let ch = text.chars().next().unwrap_or('\0');
-                match Punctuation::from_char(ch) {
-                    Some(p) => Token::Punctuation(p),
-                    None => {
-                        self.errors.push(LexerError::UnexpectedCharacter { char: ch, span });
-                        self.pos += ch.len_utf8();
-                        return;
-                    }
+            TokenKind::Punctuation => match Punctuation::from_str(text) {
+                Some(p) => Token::Punctuation(p),
+                None => {
+                    let ch = text.chars().next().unwrap_or('?');
+                    self.errors.push(
+                        LexerError::UnexpectedCharacter { char: ch, span }
+                    );
+                    self.pos += ch.len_utf8();
+                    return;
                 }
             }
         };

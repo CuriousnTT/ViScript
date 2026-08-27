@@ -65,15 +65,18 @@ lazy_static! {
         (IDENTIFIER_REGEX.clone(), TokenKind::Identifier),
 
         // Punctuation & operators (longest first!)
+        (
+            Regex::new(r"\[\||\|\]|[.:,;(){}\[\]]").unwrap(),
+            TokenKind::Punctuation // Placed before Operators due to nature of overlap on |
+        ),
         (Regex::new(concat!(
             r"\+=|-=|\*=|/=|%=|\*\*=|",
-            r"&&=|\|\|=|\?\?=|",
+            r"&&=|\|\|=|\|=|\?\?=|",
             r">>>=|>>>|<<=|>>=|<<|>>|",
             r"\^=|~|\?\?|\?\.|\.\.\.|",
             r"===|!==|==|!=|<=|>=|=>|",
             r"&&|\|\||\+\+|--|\*\*|",
             r"[+\-*/%=&|^!<>?]"
         )).unwrap(), TokenKind::Operator),
-        (Regex::new(r"[.:,;(){}\[\]]").unwrap(), TokenKind::Punctuation),
     ];
 }
