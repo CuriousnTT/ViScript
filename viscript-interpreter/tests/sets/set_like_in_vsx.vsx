@@ -1,0 +1,38 @@
+const element5 = (
+    <Component
+        value={condition ? [|"yes"|] : [|"no"|]}
+    />
+);
+
+const element6 = (
+    <Component
+        value={a || [|"fallback"|]}
+    />
+);
+
+const element7 = (
+    <Component
+        value={[|"a"|] || [|"b"|]}
+    />
+);
+
+const element8 = (
+    <Component
+        set={[|"a", "b"|]}
+        array={["a", "b"]}
+        tuple={("a", "b")}
+    />
+);
+
+const element9 = (
+    <Component>
+        [| This is VSX text, not a ViScript set. |]
+    </Component>
+);
+
+const element10 = (
+    <Some.Namespace
+        values={[|"a", "b"|]}
+    />
+);
+

@@ -1,0 +1,21 @@
+
+const element = <Component values={[|"a", "b", "c"|]} />;
+
+const element2 = (
+    <Component
+        values={[|1, 2, 3|]}
+        other={[1, 2, 3]}
+    />
+);
+
+const element3 = (
+    <Namespace.Component
+        values={[|"a"|]}
+    />
+);
+
+const element4 = (
+    <Component>
+        {[|"inside", "an", "expression"|]}
+    </Component>
+);

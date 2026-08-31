@@ -1,5 +1,42 @@
-<WrappingElement>
-    <NestedElement<Type
-        <SomethingElse>
-    </SomethingElse>
-</WrappingElement>
+// reference tuple syntax
+type MyTuple: (string, number, boolean); // must be specified for *every* index
+type MyLongTuple: (string * 6, number * 5, boolean * 3); // can be specified in bulk like this
+type MyNamedTuple: (name: string, age: number, married: boolean); //resembles type hints for arguments to functions
+
+const myTuple: MyTuple = ("Warhammer", 40000, false);
+const myNamedTuple: MyNamedTuple = ("Elizabeth", 20, false);
+
+// reference array syntax
+type StringList: string[];
+type MultiTypedList: (string | number | boolean)[];
+
+const stringList: StringList = ["Warhammer", "40000", "false"];
+const MultiTypedList: MultiTypedList = ["Elizabeth", 20, false];
+
+// [| ... |] syntax proposal -> array-like but different
+type StringSet: string[|];
+type MultiTypedSet: (string | boolean | number)[|];
+
+const strings: StringSet = [|"Warhammer", "40000", "false"|];
+const values: MultiTypedSet = [|"Elizabeth", 20, false|];
+
+// (| ... |) syntax proposal -> tuple-like but different
+type StringSet: string(|);
+type MultiTypedSet: (string | boolean | number)(|);
+
+const strings: StringSet = (|"Warhammer", "40000", "false"|);
+const values: MultiTypedSet = (|"Elizabeth", 20, false|);
+
+// #[ ... ] syntax proposal -> inspired by TC39
+type StringSet: string#[]; // or string[#], but that seems less clear
+type MultiTypedSet: (string | boolean | number)#[]; // again, considering having # inside the brackets.
+
+const strings: StringSet = #["Warhammer", "40000", "false"];
+const values: MultiTypedSet = #["Elizabeth", 20, false];
+
+// $[ ... ] syntax proposal -> inspired by template interpolation
+type StringSet: string$[];
+type MultiTypedSet: (string | boolean | number)$[];
+
+const strings: StringSet = $["Warhammer", "40000", "false"];
+const values: MultiTypedSet = $["Elizabeth", 20, false];
