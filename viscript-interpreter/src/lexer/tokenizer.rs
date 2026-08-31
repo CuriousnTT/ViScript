@@ -22,7 +22,8 @@ use crate::source::{
         Span,
         Spanned,
     },
-};pub struct LexerResult {
+};
+pub struct LexerResult {
     pub tokens: Vec<Spanned<Token>>,
     pub errors: Vec<LexerError>,
 }
