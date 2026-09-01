@@ -4,7 +4,7 @@ The programming language designed for reactivity!
 [Viscosity](https://en.wikipedia.org/wiki/Viscosity) describes how easily a fluid changes shape. The less viscous a fluid is, the more easily it changes.
 ViScript is almost TypeScript, but it is "liquid" and allows you to dial down the viscosity as much as you like!
 A word of caution: The more easily it changes, the more easily it gets out of hand. Hence, Wikipedia describes viscosity as "resistance to deformation". **When you make "liquid" code, you *must* consider viscosity!**
-ViScript aims to resemble TypeScript, to require minimal changes to a TypeScript file in order to run it as ViScript.
+ViScript aims to resemble TypeScript, to require minimal changes to a TypeScript file that adheres to best practices  before it can run as ViScript.
 If it isn't specified, it should be just like in TypeScript!
 You write ViScript in .vs files.
 
@@ -58,7 +58,7 @@ As in Type/JavaScript, when you define an object with 'const', you can still cha
 ```JavaScript
 //As before, assuming values from previous examples
 const z = { value: x}; //Since x = 3, logged value is 3
-//To change
+//To change z,
 //WILL NOT WORK: x = 5; Since z is a constant it remembers its value and not its source, and is still 3.
 z.value = 6; //This will work, and will not trigger any reactivity.
 ```
@@ -76,7 +76,11 @@ To make a ViScript effect function, you define a function in any way you like ('
 2. It must not specify any return.
 3. It must not be exported.
 
-If these criteria are met, it will be treated as an effect:
+Criterion 1 follows from how what value to assign to an argument becomes ambiguous otherwise.
+Criterion 2 follows from how, when an effect is appropriate, the natural case won't have anything available to collect the return anyway.
+Criterion 3 follows from how effects and dependency chains become chaotic and ambiguous when they span several files.
+All three criteria provide easy escape hatches for users who *don't* want to make an effect, and together they allow ViScript to make effects more easily than JavaScript frameworks.
+If these criteria are met, it will be treated as an effect. For example:
 
 ```JavaScript
 // To define a reactive effect-function, assuming the values from previous examples
@@ -91,13 +95,12 @@ x = 4 //This triggers recalculation of y
 ```
 
 As you can see, you can get a lot from considering your program's viscosity!
-Effects can also be called manually if you really want to.
-They do some extra things under the hood that you should know about.
+Effects can also be called manually, and do some extra things under the hood that are worth knowing about.
 
 ##### Implicit if-check
 
 Effect functions expect two primary use cases, and therefore include an implicit if-check.
-This check is very simple: "if all accessed variables are truthy, then execute", which can be useful when working with async (it allows ViScript to work without considering Promises) or for simple effects.
+This check is very simple: "if all accessed variables are defined, then execute", which can be useful when working with async (it allows ViScript to work without considering Promises) or for simple effects.
 This implicit check gets removed if the top level of the effect is an if-check. Then your check gets used instead. This lets you engineer very specific effects when you need them.
 If you provide your own if-check, take note: It should not include an else-segment (but else-if-segments are OK!).
 These if-checks get used in logging to provide information on whether the effect did anything or not when it triggered.
@@ -134,12 +137,12 @@ Using the 'rel'-keywordlet's you specify arguments for any normal function to ma
 You can think of any variable defined with 'rel' as follows:
 
 ```JavaScript
-//Remember when we defined rel y = 3 + x?
+//Remember when we defined rel y = 1 + x?
 //The following is basically equivalent in more traditional code:
 rel y = () => {
-  return 3 + x;
-}
-//It runs whenever the accessed variables change
+  return 1 + x;
+}(); // because it gets called immediately
+//It runs again whenever the accessed variables change
 ```
 
 Consequently, if you want a function to run reactively but the function requires arguments, you can arrange that like this:
@@ -153,22 +156,24 @@ rel recurringFunction = anyNormalFunction(x, z);
 //You can probably find a use for this!
 ```
 
+Where it will rerun if reactive arguments are passed as arguments, when any of them change.
+
 ### Seamless async, with no *need* for Promises
 
 When a 'let' or 'rel' variable receives a return from an async function, it is *not yet defined before the return is ready*, but *starts as **undefined***.
 This means that it triggers effects that depend on it right away, but if you use the default implicit if-check, the effects cancel.
 Until, that is, the **promise is fulfilled**, at which point the Promise<any | Whatever> can be handled as just any | Whatever, and you can proceed to use it as intended.
-Hence, there is no *need* to wait for Promises, but it may still be worth using them and await, since from the moment you start using effects for this you're forced to keep using effects for everything that builds on it, which can easily get out of hand.
+Hence, there is no *need* to wait for Promises, but it may still be worth using them and await.
 Example:
 
 ```TypeScript
-const itemHolder = { value: string | undefined };
+let async_result: string | undefined = undefined;
 //Including types on someAsyncFunction to show what you get to skip
 rel resolvedPromise = someAsyncFunction<Promise<string>>(someArgument);
 // promiseUser does nothing before 
 const promiseUser = () => {
   console.log(typeof resolvedPromise); //only ever logs 'string'
-  itemHolder.value = resolvedPromise;
+  async_result = resolvedPromise;
 }
 ```
 
@@ -234,11 +239,11 @@ This is yet another way that ViScript let's you do more with less code.
 
 ### Types from Python
 
-In addition to the arrays and objects of Type/JavaScript, ViScript takes a cue from Python's array types by adding more direct tuple and set support.
+In addition to the arrays and objects of Type/JavaScript, ViScript takes a cue from Python's array types by adding more direct tuple and set support. Their rules apply to their direct children; Child objects/arrays follow their own rules internally.
 
 #### Tuples
 
-As in Python, Tuples are ordered (so you can access them by index) and **unchangeable** (so there is *never* a point in defining them with 'let' or 'rel') outside of deletion, and can have duplicate values, as well as different datatypes.
+As in Python, Tuples are ordered (so you can access them by index) and **unchangeable** (so they are stable) outside of deletion, and can have duplicate values, as well as different datatypes.
 To use Tuples in ViScript, use the following syntax:
 
 ```TypeScript
@@ -251,12 +256,15 @@ const myTuple: MyTuple = ("Warhammer", 40000, false);
 //Tuples can be named
 //Type spefication for named tuple:
 type MyNamedTuple: (name: string, age: number, married: boolean);
-//If names are in type, you can skip names in definition, but you can't skip order!
+//Even if names are in type, you can skip names in definition:
 const myNamedTuple: MyNamedTuple = ("Elizabeth", 20, false);
+//Alternatively you can define the tuple items out of order by using names:
+const myNamedTuple: MyNamedTuple = (married: false, name: "Elizabeth", age: 20);
 //To access tuple, use index. You can use name if the tuple is named:
+//Note that order is definitive and name merely references position
 console.log(myTuple[0]);
-console.log(myNamedTuple[1]);
-console.log(myNamedTuple.name);
+console.log(myNamedTuple[1]); // ALWAYS accesses *age*
+console.log(myNamedTuple.name); // accesses position 0 through the label 'name'.
 ```
 
 #### Sets
@@ -267,9 +275,12 @@ Sets can not contain duplicate values, but can contain different datatypes.
 Since they are unordered, you specify types in the same way as you would with a normal TypeScript Array, and the Set only accepts members of the specified type(s).
 
 ```TypeScript
-type StringSet: string{};
-type MultiTypedSet: (string | boolean | number){};
+//To define a set type
+type StringSet: string[|];
+type MultiTypedSet: (string | boolean | number)[|];
+//To define a set
+const mySet: StringSet = [|"read", "write"|];
 ```
 
-Sets are useful for checking membership quickly and so on. They have relatively few parameters that are useful in a reactive context.
-If you have a reactive set, and a reactive variable depends on it (for example: rel rBorgInSet = rNameSet.has("Borg);), adding an element to the set tells the variable that it has to run the operation again, changing the value of the variable accordingly.
+Sets are useful for checking membership quickly and so on, which could be quite useful in a reactive context.
+If you have a reactive set, and a reactive variable depends on it (for example: rel rCanWrite = rPermissions.has("write");), adding an element to the set tells the variable that it has to run the operation again, changing the value of the variable accordingly.
