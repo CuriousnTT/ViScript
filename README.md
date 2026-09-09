@@ -139,10 +139,10 @@ You can think of any variable defined with 'rel' as follows:
 ```JavaScript
 //Remember when we defined rel y = 1 + x?
 //The following is basically equivalent in more traditional code:
-rel y = () => {
+(const y = () => {
   return 1 + x;
-}(); // because it gets called immediately
-//It runs again whenever the accessed variables change
+})(); // except y is available outside the scope
+//As a 'rel' in ViScript it also runs again whenever the accessed variables change
 ```
 
 Consequently, if you want a function to run reactively but the function requires arguments, you can arrange that like this:
@@ -254,7 +254,7 @@ type MyTuple: (string, number, boolean);
 //To define tuple (with type), do as follows:
 const myTuple: MyTuple = ("Warhammer", 40000, false);
 //Tuples can be named
-//Type spefication for named tuple:
+//Type specification for named tuple:
 type MyNamedTuple: (name: string, age: number, married: boolean);
 //Even if names are in type, you can skip names in definition:
 const myNamedTuple: MyNamedTuple = ("Elizabeth", 20, false);
@@ -266,6 +266,90 @@ console.log(myTuple[0]);
 console.log(myNamedTuple[1]); // ALWAYS accesses *age*
 console.log(myNamedTuple.name); // accesses position 0 through the label 'name'.
 ```
+
+##### Tuples, if-statements and function signatures
+There is a logic to representing tuples with parentheses in a similar manner to how Python does it, and it touches on if-statements on the one hand and function signatures on the other.
+
+###### Named tuples and function signatures
+Looking at how to define a named tuple type or object you may have noticed its resemblance to what we might feed to a function like this:
+
+```TypeScript
+function greet_person(name: string, age: number, married: boolean): void {
+  ... // function contents might greet the person informed by age and marital status; not the point.
+}
+```
+That is no accident, and allows us to specify a function's call signature with a named tuple type, like this.
+```ViScript
+function greet_person: MyNamedTuple: void {
+  ... // same function
+}
+```
+At which point the function can recognize either an actual tuple passed as the argument, meaning we would need to unpack it internally for ordinary use like in the TypeScript example... OR alternatively, we can re-conceptualize (name: string, age: number, married: boolean) from the TypeScript function definition as *actually* defining an anonymous named tuple type in the function definition itself, in which case all that has changed is that we have given it a reusable alias. By the latter logic, it should therefore *also* accept arguments for the positions of that anonymous named tuple, and require all to be filled to be valid. By the latter logic, we may therefore decide that passing it an actually compatible named tuple should work just the same as filling in the fields already does. This is what ViScript does.
+
+A critical engineer should pause here to ask what this means for functions with optional arguments, seeing as tuples don't accept the undefined type. When optional arguments are included in a named tuple type definition, you're not defining *a* named tuple type, but a union of named tuples, any of which would be a valid member of the type. This loses some of the consistency of tuples and is therefore not a good practice but is a necessary compatibility feature. In return, we get the practical rule that parentheses ***always*** denote tuples.
+
+###### Tuples and if-statements
+In JavaScript, you already see parentheses wrapping values in if-checks like this one:
+
+```JavaScript
+if (x > 10) {
+  ... // Do something
+}
+```
+
+This creates some ambiguity with tuples, seeing as in the language that inspired ViScript's tuples, Python, you could just as well see this:
+```Python
+# basic example
+some_tuple = (a, b)
+
+# or alternatively
+some_other_tuple = (x > 10,)
+
+# meanwhile, this is not a tuple
+not_a_tuple = (x > 10)
+# it could even be written like this
+still_not_a_tuple = x > 10
+```
+
+But why wouldn't it be? Think about how parentheses work in math. Parentheses generally mean that you must solve what's inside of them before you proceed. For example, in a = 5(2 + b) - b, you need to know that 2 + b is, for example, 6, before you can multiply by 5 (never mind that this is usually implicit in mathematical notation), and you need to multiply by 5 before you subtract 4 from the result in order to find the value of a. We could just as well have written that a = (5 * (2 + b) - b), too!
+This works because the parenthesis resolves to a single value, as it also does with (x > 10). Now suppose we needed to write out the math as a sequence of statements:
+```ViScript
+rel a = (
+  const b = 4;
+  const innerParen = 2 + b;
+  const timesFive = 5 * innerParen;
+  timesFive - b
+)
+```
+Here you see each of the mathematical steps spelled out in sequence on the postulate that b is 4. A sequence of statements that culminates in an easily intelligible expression that gives the value of what is in this case the 'rel' variable of `a`. Allowing this for 'rel'-variables, we might as well allow it for if-statements as well.
+
+What does that have to do with tuples? An if-statement requires a resolution to a single value, like the bool (a > 10). You have a tuple when you can't resolve into a single value, as is sometimes the case in algebra: you can't translate 2 * a* b into a number without knowing the values of both a and b, which isn't always an option. Hence, you retain both a, and b. This is what a tuple does:
+
+```Python
+result = (a, b) # analogous to algebraic ab while a and b are unknown.
+```
+Hence, a "single-value tuple" can be collapsed into its resolved value, like (a), but a "multi-value tuple" can't, like (a, b). If-statements use "tuples", but require "single-value tuples". The complexity of a value is arbitrary: We can in principle allow any number of statements that contextualize the value, as we saw with the'rel' `a` earlier. ViScript allows this for all tuple positions, and treats single-value un-named tuples as the value they resolve to. Conceptually, it is a tuple because it keeps a and b separate, but if it is just a, there is nothing to separate it from, so this seems fine.
+
+A convenient consequence is that we can sometimes avoid deep nesting in if-statements... and we can even name the condition:
+
+```TypeScript
+if ((age >= 18 && hasLicense) || isEmergencyVehicle) {
+  ... // do something
+}
+```
+
+Can become:
+
+```ViScript
+if (
+  const legalAge = age >= 18;
+  const legal = legalAge && hasLicense;
+  hasAccess: legal || isEmergencyVehicle
+) {
+  ... // do something
+}
+```
+While this does not give us less code, it can make it easier to reason about what the code does and why. Besides, this is an *option*, not required.
 
 #### Sets
 
@@ -284,3 +368,41 @@ const mySet: StringSet = [|"read", "write"|];
 
 Sets are useful for checking membership quickly and so on, which could be quite useful in a reactive context.
 If you have a reactive set, and a reactive variable depends on it (for example: rel rCanWrite = rPermissions.has("write");), adding an element to the set tells the variable that it has to run the operation again, changing the value of the variable accordingly.
+
+### Casualties
+
+Some things that were valid in JavaScript collide with some of these changes. Notably, uses of 'let' *may* need to be translated to object-wrappers, and due to effect syntax, many methods will need an explicit return (returning 'true' is generally okay, even if you never collect it). Beyond that, two cases collide with the new tuple/parenthesis rules:
+
+```JavaScript
+// side effect syntax with the comma operator
+const x = (a, b); // used to mean "evalute a, discard a, evaluate b, collect b and assign it to x"
+
+// for-loop syntax (collection-based)
+for (const item of items) {
+  // do something
+}
+
+// for-loop syntax (incrementor-based)
+for (let i = 0, j = 10; i < n; i++, j--) {
+  // do something
+}
+```
+
+#### Side-effect Syntax
+
+The side-effect syntax arguably deserves to die. If you want the side-effect of evaluating a, why isn't that worthy of its own line of code? That could promote the side-effect into a fully-fledged, patently intended main effect. You might as well write
+
+```JavaScript
+a;
+const x = b;
+```
+
+This much more clearly communicates the apparent intent, if indeed there was any to start with.
+
+#### For-loops
+
+For-loops pose a more interesting problem. Unlike all other cases of parentheses, neither of these sits comfortably as the expression in a single-value tuple; Indeed, the incrementor-syntax arguably even presents itself as *three* related expressions. The collection-based syntax is much closer to fitting the pattern, except expressions rarely start with a variable-declaring keyword.
+
+ViScript wishes to require minimal change to best practices JavaScript and TypeScript in order to run reliably, but it also seeks to be simple and intuitive enough that programmers can focus their attention on the reactivity that is supposed to be the hard part. This problem is not fully resolved yet, but the tentative solution is to turn 'of', which only occurs in collection-based for-loop syntax, into a keyword that participates in an iterator-expression. With that, removing 'const' from the example produces a workable iterator expression that can follow the rules that apply elsewhere, with the 'for' keyword knowing how to read the result of an iterator expression. The more arbitrary incrementor-based syntax consists of three "slots". The first giving initialization-instructions, the second setting a stop-condition, and the third providing instructions on what to do after each repetition of the following curly braces. Exactly how this would become an iterator expression is not yet decided, but the goal is to turn it into an iterator expression. That way, 'for' simply becomes a keyword that can handle an iterator expression, which also opens up design-space for other contexts being allowed to handle iterator expressions, thereby allowing for list-comprehension, which in turn is amplified by the tuple-rules.
+
+While a much less convenient compatibility casualty, the old for-loop syntax patterns thereby open up additional design space and convenience options in being eliminated, and are therefore seen as a worthwhile casualty.
