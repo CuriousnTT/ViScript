@@ -1,6 +1,6 @@
 use strum_macros::{EnumString, Display};
 
-#[derive(Debug, Clone, PartialEq, EnumString, Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, Display)]
 pub enum Operator {
     // Arithmetic
     #[strum(serialize = "+")]
@@ -135,6 +135,36 @@ impl Operator {
 
             // Omit LessThan & GreaterThan?
 
+        )
+    }
+
+    pub fn is_assignment(self) -> bool {
+        matches!(
+            self,
+            Self::Assignment
+                | Self::AdditionAssignment
+                | Self::SubtractionAssignment
+                | Self::MultiplicationAssignment
+                | Self::DivisionAssignment
+                | Self::RemainderAssignment
+                | Self::ExponentiationAssignment
+                | Self::LeftShiftAssignment
+                | Self::RightShiftAssignment
+                | Self::UnsignedRightShiftAssignment
+                | Self::BitwiseAndAssignment
+                | Self::BitwiseOrAssignment
+                | Self::BitwiseXorAssignment
+                | Self::LogicalAndAssignment
+                | Self::LogicalOrAssignment
+                | Self::NullishCoalescingAssignment
+        )
+    }
+
+    pub fn is_shift_right(self) -> bool {
+        matches!(
+            self,
+            Self::RightShift
+                | Self::UnsignedRightShift
         )
     }
 }

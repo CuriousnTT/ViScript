@@ -1,6 +1,6 @@
 use strum_macros::{{EnumString, Display}};
 
-#[derive(Debug, Clone, PartialEq, EnumString, Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumString, Display)]
 #[strum(serialize_all = "lowercase")]
 pub enum Keyword {
     // declarations

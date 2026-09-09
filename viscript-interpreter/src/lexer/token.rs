@@ -9,7 +9,7 @@ use crate::lexer::{
 };
 
 /// Main Token abstraction
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Keyword(Keyword),
     Identifier(String),
@@ -28,6 +28,11 @@ pub enum Token {
 }
 
 impl Token {
+
+    pub fn is_eof(&self) -> bool {
+        matches!(self, Token::EOF)
+    }
+
     pub fn is_less_than(&self) -> bool {
         return matches!(
             self, Token::Operator(Operator::LessThan)
