@@ -1,13 +1,15 @@
+mod ast;
 mod common;
 mod lexer;
-//mod parser;
+mod parser;
 mod source;
+mod token;
 
 use std::env;
 use lexer::tokenizer::tokenize;
 use source::sourcefile::SourceFile;
 //use parser::ast::ASTNode;
-//use parser::parser::parse;
+use parser::parser::parse;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     //Get test file from arguments
@@ -34,13 +36,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         //return;
     }
     if !lexer_result.tokens.is_empty() {
-        eprintln!("Tokens:")
+        println!("Raw Lexer Tokens:")
     }
     for token in &lexer_result.tokens {
         println!("  {}", token)
     }
     
-    //let input_bytes = &input.as_bytes();
+    let parse_result = parse(&lexer_result.tokens);
+    if !parse_result.errors.is_empty() {
+        eprintln!("Parser errors:");
+    
+        for err in &parse_result.errors {
+            eprint!("{}", err.report(&file));
+        }
+    }
+
+    if let Some(ast) = &parse_result.ast {
+        if !ast.statements.is_empty() {
+            println!("Parsed statements");
+            
+            for stmt in &ast.statements {
+                println!("  {:?}", stmt)
+            }
+        }
+    }
+
     //let ast: ASTNode = parse(&tokens);
     //println!("Token AST:\n{:?}", ast);
     Ok(())

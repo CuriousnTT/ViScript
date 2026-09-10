@@ -1,18 +1,10 @@
 pub mod contexts;
-pub mod directive;
 pub mod error;
-pub mod keyword;
-pub mod literal;
 mod lookahead_lexer;
 mod nested_lexing_support;
 mod number_lexer;
-pub mod operator;
-pub mod punctuation;
 pub mod regex;
 mod regex_lexer;
-pub mod template;
 mod template_lexer;
 pub mod tokenizer;
-pub mod token;
-pub mod vsx;
 pub mod vsx_lexer;

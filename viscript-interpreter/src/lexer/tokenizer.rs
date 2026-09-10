@@ -1,20 +1,15 @@
 use std::str::FromStr;
+
 use crate::lexer::{
     contexts::{
         BraceContext,
         ParenContext,
     },
-    directive::Directive,
     error::LexerError,
-    keyword::Keyword,
-    literal:: Literal,
-    operator::Operator,
-    punctuation::Punctuation,
     regex::{
         SKIP_REGEX, TOKEN_REGEX,
-    }, token::{
-        Token, TokenKind,
     },
+
 };
 use crate::common::strings::unescape_string;
 use crate::source::{
@@ -23,6 +18,18 @@ use crate::source::{
         Spanned,
     },
 };
+use crate::token::{
+    directive::Directive,
+    keyword::Keyword,
+    literal:: Literal,
+    operator::Operator,
+    punctuation::Punctuation,
+    token::{
+        Token,
+        TokenKind,
+    },
+};
+
 pub struct LexerResult {
     pub tokens: Vec<Spanned<Token>>,
     pub errors: Vec<LexerError>,

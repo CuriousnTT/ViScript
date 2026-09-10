@@ -32,7 +32,7 @@ impl Span  {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Spanned<T> {
     pub value: T,
     pub span: Span,

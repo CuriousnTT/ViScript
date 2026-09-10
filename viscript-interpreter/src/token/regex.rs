@@ -1,16 +1,5 @@
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Literal {
-    BigInt(String),
-    Boolean(bool),
-    Null,
-    Numeric(String),
-    RegExp(RegExp),
-    String(String),
-    Undefined,
-}
-
 #[derive(Clone, PartialEq)]
 pub struct RegExp {
     pub pattern: String,

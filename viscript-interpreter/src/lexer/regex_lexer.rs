@@ -2,11 +2,13 @@ use std::collections::HashSet;
 
 use crate::lexer::{
     error::LexerError,
-    literal::Literal,
-    token::Token,
     tokenizer::Lexer,
 };
 use crate::source::span::Span;
+use crate::token::{
+    literal::Literal,
+    token::Token,
+};
 
 struct RegexBody {
     body_end: usize, // position of closing candidate closing '/'

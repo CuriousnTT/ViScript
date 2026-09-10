@@ -1,7 +1,7 @@
 use regex::Regex;
 use lazy_static::lazy_static;
 
-use crate::lexer::token::TokenKind;
+use crate::token::token::TokenKind;
 
 
 lazy_static! {

@@ -1,30 +1,33 @@
 use std::str::FromStr;
+
 use crate::lexer::{
     error::LexerError,
-    operator::Operator,
-    punctuation::Punctuation,
     regex::{
         VSX_IDENTIFIER_REGEX,
         VSX_IN_TAG_REGEX
     },
-    token::{
-        Token,
-        TokenKind,
-    },
+
     tokenizer::{
         Lexer,
         tokenize_range,
-    },
-    vsx::{
-        Tag,
-        VSX,
     },
 };
 use crate::source::span::{
     Span,
     Spanned
 };
-
+use crate::token::{
+    operator::Operator,
+    punctuation::Punctuation,
+    token::{
+        Token,
+        TokenKind,
+    },
+    vsx::{
+        Tag,
+        VSX,
+    },
+};
 
 impl <'a> Lexer <'a> {
     pub(super) fn scan_vsx(&mut self) {

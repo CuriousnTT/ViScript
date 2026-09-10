@@ -1,7 +1,5 @@
 use crate::lexer::{
     error::LexerError,
-    template::Template,
-    token::Token,
     tokenizer::{
         Lexer,
         tokenize_range,
@@ -12,6 +10,10 @@ use crate::source::{
         Span,
         Spanned,
     },
+};
+use crate::token::{
+    template::Template,
+    token::Token,
 };
 
 impl <'a> Lexer <'a> {

@@ -1,10 +1,12 @@
 use crate::lexer::{
     error::LexerError,
-    literal::Literal,
-    token::Token,
     tokenizer::Lexer,
 };
 use crate::source::span::Span;
+use crate::token::{
+    literal::Literal,
+    token::Token,
+};
 
 impl <'a> Lexer <'a> {
     pub(super) fn scan_number(&mut self) {
