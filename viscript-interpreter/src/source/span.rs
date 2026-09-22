@@ -10,6 +10,13 @@ impl Span  {
         Self { start, end }
     }
 
+    pub fn empty(at: usize) -> Self {
+        Self {
+            start: at,
+            end: at,
+        }
+    }
+
     /// Returns a Span spanning from start of self to end of other.
     pub fn until(self, other: Span) -> Span {
         Span {
@@ -29,6 +36,16 @@ impl Span  {
     /// Offset convencience for when you have a base position
     pub fn offset_by(self, base:usize) -> Span {
         self.offset(base)
+    }
+
+    /// Generate a String representation of the Span
+    pub fn format(self) -> String {
+        format!(
+            "[{}..{}, len={}]",
+            self.start,
+            self.end,
+            self.end - self.start,
+        )
     }
 }
 
@@ -56,5 +73,13 @@ impl<T> Spanned<T> {
     /// mutating offset
     pub fn offset_in_place(&mut self, offset: usize) {
         self.span = self.span.offset(offset)
+    }
+
+    /// maps the Spanned value to a different type with the same span
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Spanned<U> {
+        Spanned {
+            value: f(self.value),
+            span: self.span,
+        }
     }
 }

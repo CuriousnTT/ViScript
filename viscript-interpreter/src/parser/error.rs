@@ -9,15 +9,23 @@ use crate::source::{
     sourcefile::SourceFile,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ParserError {
     ExpectedExpression {
         found: Spanned<Token>
     },
 
-    ExpectedToken {
-        expected: Token,
+    ExpectedStatement {
         found: Spanned<Token>,
+    },
+
+    UnexpectedToken {
+        expected: Vec<Token>,
+        found: Spanned<Token>,
+    },
+
+    UnexpectedEof {
+        span: Span,
     },
 }
 
@@ -27,9 +35,15 @@ impl fmt::Display for ParserError {
             Self::ExpectedExpression { found, .. } => {
                 write!(f, "Expected expression, found '{:?}'", found.value)
             },
-            Self::ExpectedToken { expected, found } => {
+            Self::ExpectedStatement { found } => {
+                write!(f, "Expected token that could start statement, found '{:?}'", found.value)
+            },
+            Self::UnexpectedToken { expected, found } => {
                 write!(f, "Expected '{:?}', found '{:?}'", expected, found.value)
-            }
+            },
+            Self::UnexpectedEof { .. } => {
+                write!(f, "Unexpected end of file")
+            },
         }
     }
 }
@@ -39,8 +53,10 @@ impl std::error::Error for ParserError {}
 impl ParserError {
     pub fn span(&self) -> Span {
         match self {
-            Self::ExpectedExpression { found, .. } => found.span,
-            Self::ExpectedToken { found, .. } => found.span,
+            Self::ExpectedExpression { found } => found.span,
+            Self::ExpectedStatement { found } => found.span,
+            Self::UnexpectedToken { found, .. } => found.span,
+            Self::UnexpectedEof { span } => *span,
         }
     }
 

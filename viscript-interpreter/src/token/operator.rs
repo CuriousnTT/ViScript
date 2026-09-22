@@ -167,4 +167,62 @@ impl Operator {
                 | Self::UnsignedRightShift
         )
     }
+
+    /// TODO: logical OR / nullish / conditional
+    pub fn binding_power(self) -> Option<(u8, u8)> {
+        match self {
+
+            // right associative
+            Self::Exponentiation => Some((13, 13)),
+            
+            // left associative
+            Self::Multiplication
+            | Self::Division
+            | Self::Remainder => Some((12, 13)),
+
+            Self::Addition
+            | Self::Subtraction => Some((11, 12)),
+
+            Self::LeftShift
+            | Self::RightShift
+            | Self::UnsignedRightShift => Some((10, 11)),
+
+            Self::LessThan
+            | Self::LessThanOrEqual
+            | Self::GreaterThan
+            | Self::GreaterThanOrEqual => Some((9,10)),
+
+            Self::Equality
+            | Self::Inequality
+            | Self::StrictEquality
+            | Self::StrictInequality => Some((8, 9)),
+
+            Self::BitwiseAnd => Some((7, 8)),
+
+            Self::BitwiseXor => Some((6, 7)),
+
+            Self::BitwiseOr => Some((5, 6)),
+
+            Self::LogicalAnd => Some((4,5)),
+
+                        Self::Assignment
+                | Self::AdditionAssignment
+                | Self::SubtractionAssignment
+                | Self::MultiplicationAssignment
+                | Self::DivisionAssignment
+                | Self::RemainderAssignment
+                | Self::ExponentiationAssignment
+                | Self::LeftShiftAssignment
+                | Self::RightShiftAssignment
+                | Self::UnsignedRightShiftAssignment
+                | Self::BitwiseAndAssignment
+                | Self::BitwiseOrAssignment
+                | Self::BitwiseXorAssignment
+                | Self::LogicalAndAssignment
+                | Self::LogicalOrAssignment
+                | Self::NullishCoalescingAssignment => Some((1, 1)),
+
+            _ => None,
+        }
+    }
 }

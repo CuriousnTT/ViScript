@@ -73,7 +73,7 @@ impl<'a> Lexer<'a> {
 
         self.push_token(
             Token::EOF,
-            Span::new(self.pos, self.pos)
+            Span::empty(self.pos)
         );
 
         LexerResult {

@@ -1,5 +1,6 @@
 use crate::ast::{
-    tuple::Tuple
+    tuple::Tuple,
+    template::Template,
 };
 use crate::source::span::Spanned;
 use crate::token::operator::Operator;
@@ -7,9 +8,16 @@ use crate::token::operator::Operator;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expression {
     // primary
-    NumericLiteral(Spanned<String>),
-    Identifier(Spanned<String>),
+    Identifier(String),
+    /// Persists as Null until semantic analysis
+    NullLiteral,
+    NumericLiteral(String),
+    StringLiteral(String),
     Tuple(Spanned<Tuple>),
+    Template(Spanned<Template>),
+    /// Consumes NullLiteral in semantic analysis
+    UndefinedLiteral,
+    
 
     // postfixes
     MemberAccess {
@@ -21,10 +29,15 @@ pub enum Expression {
         arguments: Spanned<Tuple>,
     },
 
-    // Sequences
+    // secondary
     Binary {
         left: Box<Spanned<Expression>>,
         operator: Spanned<Operator>,
         right: Box<Spanned<Expression>>,
     },
+    Assignment {
+        target: Box<Spanned<Expression>>,
+        operator: Spanned<Operator>,
+        value: Box<Spanned<Expression>>,
+    }
 }

@@ -6,9 +6,10 @@ mod source;
 mod token;
 
 use std::env;
+
+use ast::format::format_statement;
 use lexer::tokenizer::tokenize;
 use source::sourcefile::SourceFile;
-//use parser::ast::ASTNode;
 use parser::parser::parse;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -56,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Parsed statements");
             
             for stmt in &ast.statements {
-                println!("  {:?}", stmt)
+                println!("  {}", format_statement(stmt))
             }
         }
     }

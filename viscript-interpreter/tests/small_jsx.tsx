@@ -1,4 +1,4 @@
-const x =
+const X =
   <div>
     {/abc}
   </div>;

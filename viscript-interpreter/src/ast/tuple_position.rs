@@ -10,3 +10,9 @@ pub struct TuplePosition {
     pub value: Spanned<Expression>,
     pub label: Option<Spanned<String>>,
 }
+
+impl TuplePosition {
+    pub fn is_labeled(&self) -> bool {
+        self.label.is_some()
+    }
+}
